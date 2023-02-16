@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+import csv
 
 url = "https://internshala.com/internships/work-from-home-internships/"
 html = requests.get(url)
@@ -32,7 +33,8 @@ for page in range(1, page_range+1):
         other_details = internship_other_detail.find_all("div", class_="other_detail_item")
         start_date = other_details[0].find("div", id="start-date-first").find_all("span")[-1].text
         duration = other_details[1].find("div", class_="item_body").text.strip()
-        stipend = other_details[2].find("span", class_="stipend").text.split("/")[0][1:]
+        raw_stipend = other_details[2].find("span", class_="stipend").text.split("/")[0][1:]
+        stipend = 0 if raw_stipend == "npaid" else raw_stipend
 
         internship_post = {
             "Profile": profile,
@@ -46,4 +48,18 @@ for page in range(1, page_range+1):
 
     print(f"Parsed page {page}, Total Found: {len(internship_data)} posts")
 
-print(len(internship_data))
+print(f"PARSING COMPLETE, found {len(internship_data)} posts")
+
+with open('./internshala.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(["Profile", "Company", "Stipend", "Start Date", "Duration"])
+
+    for data in internship_data:
+        writer.writerow([data["Profile"],
+            data["Company"],
+            data["Stipend"],
+            data["Start Date"],
+            data["Duration"]
+        ])
+
+print("Finished Parsing: Saved data to internshala.csv")
